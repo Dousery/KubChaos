@@ -1,0 +1,17 @@
+dashboard:
+  enabled: true
+  ingress:
+    enabled: false
+
+controllerManager:
+  replicaCount: 1
+
+chaosDaemon:
+  runtime: containerd
+  socketPath: /run/containerd/containerd.sock
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+
