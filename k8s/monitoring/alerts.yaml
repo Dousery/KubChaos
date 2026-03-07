@@ -1,0 +1,26 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: chaos-lab-rules
+  namespace: monitoring
+spec:
+  groups:
+    - name: demo-http.rules
+      rules:
+        - alert: DemoHttpHigh5xx
+          expr: sum(rate(http_requests_total{app="demo-http",status=~"5.."}[5m])) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "demo-http 5xx rate high"
+            description: "High rate of 5xx responses on demo-http service."
+        - alert: DemoHttpPodRestarts
+          expr: increase(kube_pod_container_status_restarts_total{namespace="test-app",container="demo-http"}[10m]) > 3
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "demo-http pod restarts high"
+            description: "demo-http pods restarted more than 3 times in 10 minutes."
+
