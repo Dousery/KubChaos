@@ -1,0 +1,19 @@
+grafana:
+  enabled: true
+  service:
+    type: NodePort
+    nodePort: 30090
+  adminUser: admin
+  adminPassword: admin
+
+prometheus:
+  service:
+    type: ClusterIP
+
+alertmanager:
+  enabled: true
+
+prometheusOperator:
+  admissionWebhooks:
+    enabled: false
+
