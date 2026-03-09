@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-http
+  namespace: test-app
+  labels:
+    app: demo-http
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: demo-http
+  template:
+    metadata:
+      labels:
+        app: demo-http
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5678"
+    spec:
+      containers:
+        - name: demo-http
+          image: hashicorp/http-echo
+          args:
+            - "-text=hello-from-chaos-lab"
+          ports:
+            - containerPort: 5678
+
