@@ -1,28 +1,43 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: demo-http
+  name: demo-api
   namespace: test-app
   labels:
-    app: demo-http
+    app: demo-api
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: demo-http
+      app: demo-api
   template:
     metadata:
       labels:
-        app: demo-http
+        app: demo-api
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "5678"
     spec:
       containers:
-        - name: demo-http
-          image: hashicorp/http-echo
-          args:
-            - "-text=hello-from-chaos-lab"
+        - name: demo-api
+          image: demo-api:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5678
+          env:
+            - name: DOWNSTREAM_URL
+              value: "http://demo-downstream.test-app.svc.cluster.local:8080/slow"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 5678
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 5678
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
 
