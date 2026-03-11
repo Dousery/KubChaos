@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-downstream
+  namespace: test-app
+  labels:
+    app: demo-downstream
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: demo-downstream
+  template:
+    metadata:
+      labels:
+        app: demo-downstream
+    spec:
+      containers:
+        - name: demo-downstream
+          image: demo-downstream:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DEMO_DELAY_SECONDS
+              value: "0.2"
+            - name: DEMO_DELAY_JITTER
+              value: "0.5"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
