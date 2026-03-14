@@ -3,7 +3,7 @@ import time
 
 import requests
 from flask import Flask, jsonify, request
-
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
 DOWNSTREAM_URL = os.getenv(
     "DOWNSTREAM_URL",
@@ -17,6 +17,36 @@ else:
 
 
 app = Flask(__name__)
+
+# Prometheus metrics (app="demo-http" matches alerts in k8s/monitoring/alerts.yaml)
+REQUEST_COUNT = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["app", "method", "path", "status"],
+)
+REQUEST_LATENCY = Histogram(
+    "http_request_duration_seconds",
+    "Request latency in seconds",
+    ["app", "method", "path"],
+    buckets=(0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
+)
+
+
+@app.before_request
+def _record_start():
+    request.start_time = time.time()
+
+
+@app.after_request
+def _record_metrics(response):
+    if request.path == "/metrics":
+        return response
+    duration = time.time() - getattr(request, "start_time", time.time())
+    path = request.path or "/"
+    status = str(response.status_code)
+    REQUEST_COUNT.labels(app="demo-http", method=request.method, path=path, status=status).inc()
+    REQUEST_LATENCY.labels(app="demo-http", method=request.method, path=path).observe(duration)
+    return response
 
 
 def _call(url: str, method: str = "GET", json_body=None, timeout: float = 5.0):
@@ -182,6 +212,11 @@ def fanout():
 @app.route("/healthz")
 def healthz():
     return "ok", 200
+
+
+@app.route("/metrics")
+def metrics():
+    return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
 
 
 if __name__ == "__main__":
